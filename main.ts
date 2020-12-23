@@ -132,7 +132,8 @@ export default class CaliforniaCoastTheme extends Plugin {
           --font-monospace:${this.settings.monoFont};
           --text:${this.settings.textFont};
           --text-editor:${this.settings.editorFont};
-      `;
+        }
+      `.trim().replace(/[\r\n\s]+/g, ' ');
     }
   }
 
