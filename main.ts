@@ -6,6 +6,8 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 
+import EmbeddedHeadingsExtension from "./extensions/embeddedHeadings";
+
 const config = {
   attributes: false,
   childList: true,
@@ -33,8 +35,11 @@ export default class CaliforniaCoastTheme extends Plugin {
   settings: ThemeSettings;
   media: MediaQueryList | null = null;
   observers: { [id: string]: MutationObserver } = {};
+  embeddedHeadings: EmbeddedHeadingsExtension;
 
   async onload() {
+    this.embeddedHeadings = new EmbeddedHeadingsExtension();
+
     this.settings = (await this.loadData()) || new ThemeSettings();
 
     this.addSettingTab(new ThemeSettingTab(this.app, this));
@@ -51,10 +56,15 @@ export default class CaliforniaCoastTheme extends Plugin {
     ) {
       this.enableContextualTypography();
     }
+
+    if (this.settings.embeddedHeadings) {
+      this.enableEmbeddedHeadings();
+    }
   }
 
   onunload() {
-    this.disableContextualTypography()
+    this.disableContextualTypography();
+    this.disableEmbeddedHeadings();
   }
 
   mediaCallback = (e: MediaQueryListEvent) => {
@@ -133,7 +143,9 @@ export default class CaliforniaCoastTheme extends Plugin {
           --text:${this.settings.textFont};
           --text-editor:${this.settings.editorFont};
         }
-      `.trim().replace(/[\r\n\s]+/g, ' ');
+      `
+        .trim()
+        .replace(/[\r\n\s]+/g, " ");
     }
   }
 
@@ -187,31 +199,50 @@ export default class CaliforniaCoastTheme extends Plugin {
   enableContextualTypography = () => {
     this.registerEvent(
       this.app.workspace.on("layout-change", () => {
-        const seen: { [k: string]: boolean } = {};
-
-        this.app.workspace.iterateRootLeaves((leaf) => {
-          const id = (leaf as any).id as string;
-          this.connectObserver(id, leaf);
-          seen[id] = true;
-        });
-
-        Object.keys(this.observers).forEach((k) => {
-          if (!seen[k]) {
-            this.disconnectObserver(k);
-          }
-        });
+        if (this.settings.prettyPreview) {
+          const seen: { [k: string]: boolean } = {};
+  
+          this.app.workspace.iterateRootLeaves((leaf) => {
+            const id = (leaf as any).id as string;
+            this.connectObserver(id, leaf);
+            seen[id] = true;
+          });
+  
+          Object.keys(this.observers).forEach((k) => {
+            if (!seen[k]) {
+              this.disconnectObserver(k);
+            }
+          });
+        }
       })
     );
-  }
+  };
 
   disableContextualTypography = () => {
     Object.keys(this.observers).forEach((k) => this.disconnectObserver(k));
-  }
+  };
+
+  enableEmbeddedHeadings = () => {
+    this.embeddedHeadings.onload();
+
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        if (this.settings.embeddedHeadings) {
+          this.embeddedHeadings.createHeadings(this.app);
+        }
+      })
+    );
+  };
+
+  disableEmbeddedHeadings = () => {
+    this.embeddedHeadings.onunload();
+  };
 }
 
 class ThemeSettings {
   prettyEditor: boolean = true;
   prettyPreview: boolean = true;
+  embeddedHeadings: boolean = false;
   useSystemTheme: boolean = false;
 
   lineWidth: number = 42;
@@ -255,9 +286,7 @@ class ThemeSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Enhanced Preview Typography")
-      .setDesc(
-        "Enhances the typography styles in preview mode. The Contextual Typography plugin is recommended"
-      )
+      .setDesc("Enhances the typography styles in preview mode")
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.prettyPreview)
@@ -267,9 +296,28 @@ class ThemeSettingTab extends PluginSettingTab {
             this.plugin.refresh();
 
             if (value) {
-              this.plugin.enableContextualTypography()
+              this.plugin.enableContextualTypography();
             } else {
-              this.plugin.disableContextualTypography()
+              this.plugin.disableContextualTypography();
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Display note file names as headings")
+      .setDesc("Embeds note titles as top level H1 tags")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.embeddedHeadings)
+          .onChange((value) => {
+            this.plugin.settings.embeddedHeadings = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+
+            if (value) {
+              this.plugin.enableEmbeddedHeadings();
+            } else {
+              this.plugin.disableEmbeddedHeadings();
             }
           })
       );
