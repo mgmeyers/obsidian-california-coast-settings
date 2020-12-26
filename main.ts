@@ -7,6 +7,9 @@ import {
 } from "obsidian";
 
 import EmbeddedHeadingsExtension from "./extensions/embeddedHeadings";
+import { initIcons } from './extensions/boxicons'
+
+initIcons();
 
 const config = {
   attributes: false,
