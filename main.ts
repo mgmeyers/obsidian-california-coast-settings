@@ -7,7 +7,7 @@ import {
 } from "obsidian";
 
 import EmbeddedHeadingsExtension from "./extensions/embeddedHeadings";
-import { initIcons } from './extensions/boxicons'
+import { initIcons } from "./extensions/boxicons";
 
 initIcons();
 
@@ -117,7 +117,7 @@ export default class CaliforniaCoastTheme extends Plugin {
   }
 
   removeStyle() {
-    document.body.removeClass("cc-pretty-editor", "cc-pretty-preview");
+    document.body.removeClass("cc-pretty-editor", "cc-pretty-preview", "fancy-cursor");
   }
 
   // update the styles (at the start, or as the result of a settings change)
@@ -131,6 +131,7 @@ export default class CaliforniaCoastTheme extends Plugin {
       "cc-pretty-preview",
       this.settings.prettyPreview
     );
+    document.body.classList.toggle("fancy-cursor", this.settings.fancyCursor);
 
     // get the custom css element
     const el = document.getElementById("california-coast-theme");
@@ -141,10 +142,14 @@ export default class CaliforniaCoastTheme extends Plugin {
         body.california-coast-theme {
           --editor-font-size:${this.settings.textNormal}px;
           --editor-font-features: ${this.settings.fontFeatures};
+          --editor-line-height: ${this.settings.editorLineHeight};
+          --editor-line-height-rem: ${this.settings.editorLineHeight}rem;
           --line-width:${this.settings.lineWidth}rem;
           --font-monospace:${this.settings.monoFont};
           --text:${this.settings.textFont};
           --text-editor:${this.settings.editorFont};
+          --accent-h:${this.settings.accentHue};
+          --accent-s:${this.settings.accentSat}%;
         }
       `
         .trim()
@@ -204,13 +209,13 @@ export default class CaliforniaCoastTheme extends Plugin {
       this.app.workspace.on("layout-change", () => {
         if (this.settings.prettyPreview) {
           const seen: { [k: string]: boolean } = {};
-  
+
           this.app.workspace.iterateRootLeaves((leaf) => {
             const id = (leaf as any).id as string;
             this.connectObserver(id, leaf);
             seen[id] = true;
           });
-  
+
           Object.keys(this.observers).forEach((k) => {
             if (!seen[k]) {
               this.disconnectObserver(k);
@@ -247,6 +252,9 @@ class ThemeSettings {
   prettyPreview: boolean = true;
   embeddedHeadings: boolean = false;
   useSystemTheme: boolean = false;
+  fancyCursor: boolean = false;
+  accentHue: number = 211;
+  accentSat: number = 100;
 
   lineWidth: number = 42;
   textNormal: number = 18;
@@ -258,6 +266,7 @@ class ThemeSettings {
 
   editorFont: string =
     '-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,sans-serif';
+  editorLineHeight: number = 1.88889;
 
   monoFont: string = "Menlo,SFMono-Regular,Consolas,Roboto Mono,monospace";
 }
@@ -275,6 +284,47 @@ class ThemeSettingTab extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.createEl("h3", { text: "California Coast Theme" });
+    containerEl.createEl("a", { text: "⬤ Accent color" });
+    containerEl.createEl("h3");
+
+    new Setting(containerEl)
+      .setName("Accent color hue")
+      .setDesc("For links and interactive elements")
+      .addSlider((slider) =>
+        slider
+          .setLimits(0, 360, 1)
+          .setValue(this.plugin.settings.accentHue)
+          .onChange((value) => {
+            this.plugin.settings.accentHue = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Accent color saturation")
+      .setDesc("For links and interactive elements")
+      .addSlider((slider) =>
+        slider
+          .setLimits(0, 100, 1)
+          .setValue(this.plugin.settings.accentSat)
+          .onChange((value) => {
+            this.plugin.settings.accentSat = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Accented cursor")
+      .setDesc("The editor cursor takes on your accent color")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.fancyCursor).onChange((value) => {
+          this.plugin.settings.fancyCursor = value;
+          this.plugin.saveData(this.plugin.settings);
+          this.plugin.refresh();
+        })
+      );
 
     new Setting(containerEl)
       .setName("Enhanced Editor Typography")
@@ -366,6 +416,20 @@ class ThemeSettingTab extends PluginSettingTab {
           .setValue((this.plugin.settings.textNormal || "") + "")
           .onChange((value) => {
             this.plugin.settings.textNormal = parseInt(value.trim());
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Body line height")
+      .setDesc("Used for the main text (default 1.88889)")
+      .addText((text) =>
+        text
+          .setPlaceholder("1.88889")
+          .setValue((this.plugin.settings.editorLineHeight || "") + "")
+          .onChange((value) => {
+            this.plugin.settings.editorLineHeight = parseInt(value.trim());
             this.plugin.saveData(this.plugin.settings);
             this.plugin.refresh();
           })
