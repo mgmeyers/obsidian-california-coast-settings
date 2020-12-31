@@ -236,7 +236,9 @@ export default class CaliforniaCoastTheme extends Plugin {
     this.registerEvent(
       this.app.workspace.on("layout-change", () => {
         if (this.settings.embeddedHeadings) {
-          this.embeddedHeadings.createHeadings(this.app);
+          setTimeout(() => {
+            this.embeddedHeadings.createHeadings(this.app);
+          }, 0)
         }
       })
     );
