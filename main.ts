@@ -431,7 +431,7 @@ class ThemeSettingTab extends PluginSettingTab {
           .setPlaceholder("1.88889")
           .setValue((this.plugin.settings.editorLineHeight || "") + "")
           .onChange((value) => {
-            this.plugin.settings.editorLineHeight = parseInt(value.trim());
+            this.plugin.settings.editorLineHeight = parseFloat(value.trim());
             this.plugin.saveData(this.plugin.settings);
             this.plugin.refresh();
           })
