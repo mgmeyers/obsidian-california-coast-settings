@@ -1,9 +1,11 @@
 import { App, WorkspaceLeaf } from "obsidian";
 
 export default class EmbeddedHeadingsExtension {
-  headings: { [id: string]: WorkspaceLeaf } = {};
+  headings: { [id: string]: {
+    leaf: WorkspaceLeaf,
+    resizeWatcher: any} } = {};
 
-  removeHeading(id: string, leaf: WorkspaceLeaf) {
+  removeHeading(id: string) {
     if (!this.headings[id]) return;
 
     const h1Edit = document.getElementById(`${id}-edit`);
@@ -12,6 +14,9 @@ export default class EmbeddedHeadingsExtension {
     if (h1Edit) h1Edit.remove();
     if (h1Preview) h1Preview.remove();
 
+    this.headings[id].resizeWatcher.disconnect()
+
+    delete this.headings[id].resizeWatcher;
     delete this.headings[id];
   }
 
@@ -26,6 +31,10 @@ export default class EmbeddedHeadingsExtension {
       "CodeMirror-scroll"
     );
 
+    const lines = leaf.view.containerEl.getElementsByClassName(
+      "CodeMirror-lines"
+    );
+
     const previewContent = leaf.view.containerEl.getElementsByClassName(
       "markdown-preview-view"
     );
@@ -38,6 +47,24 @@ export default class EmbeddedHeadingsExtension {
       h1Edit.id = `${id}-edit`;
       editEl.prepend(h1Edit);
 
+      let debounceTimer = 0;
+
+      const resizeWatcher = new (window as any).ResizeObserver((entries: any) => {
+        clearTimeout(debounceTimer)
+
+        debounceTimer = window.setTimeout(() => {
+          if (lines.length) {
+            const linesEl = lines[0] as HTMLDivElement;
+            const height = Math.ceil(entries[0].borderBoxSize[0].blockSize);
+    
+            linesEl.style.paddingTop = `${height}px`;
+            h1Edit.style.marginBottom = `-${height}px`;
+          }
+        }, 20)
+      })
+
+      resizeWatcher.observe(h1Edit)
+
       const previewEl = previewContent[0] as HTMLDivElement;
       const h1Preview = document.createElement("h1");
 
@@ -45,7 +72,7 @@ export default class EmbeddedHeadingsExtension {
       h1Preview.id = `${id}-preview`;
       previewEl.prepend(h1Preview);
 
-      this.headings[id] = leaf;
+      this.headings[id] = { leaf, resizeWatcher };
     }
   }
 
@@ -79,7 +106,7 @@ export default class EmbeddedHeadingsExtension {
 
     Object.keys(this.headings).forEach((id) => {
       if (!seen[id]) {
-        this.removeHeading(id, this.headings[id]);
+        this.removeHeading(id);
       }
     });
   }
@@ -92,7 +119,7 @@ export default class EmbeddedHeadingsExtension {
     document.body.classList.remove("embedded-note-title");
 
     Object.keys(this.headings).forEach((id) => {
-      this.removeHeading(id, this.headings[id]);
+      this.removeHeading(id);
     });
   }
 }
