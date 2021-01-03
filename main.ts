@@ -324,8 +324,21 @@ class ThemeSettingTab extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.createEl("h3", { text: "California Coast Theme" });
+    containerEl.createEl("br");
     containerEl.createEl("a", { text: "⬤ Accent Color" });
     containerEl.createEl("h3");
+
+    new Setting(containerEl)
+      .setName("Reset accent color")
+      .setDesc("Set accent color back to theme default")
+      .addButton((button) =>
+        button.setButtonText("Reset").onClick(() => {
+          this.plugin.settings.accentHue = defaultSettings.accentHue;
+          this.plugin.settings.accentSat = defaultSettings.accentSat;
+          this.plugin.saveData(this.plugin.settings);
+          this.plugin.refresh();
+        })
+      );
 
     new Setting(containerEl)
       .setName("Accent color hue")
@@ -391,6 +404,9 @@ class ThemeSettingTab extends PluginSettingTab {
             }
           })
       );
+
+    containerEl.createEl("br");
+    containerEl.createEl("h3", { text: "Typography" });
 
     new Setting(containerEl)
       .setName("Enhanced Editor Typography")
