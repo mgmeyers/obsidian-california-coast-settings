@@ -8,10 +8,37 @@ import {
 
 import EmbeddedHeadingsExtension from "./extensions/embeddedHeadings";
 import { initIcons } from "./extensions/boxicons";
+import { numberOrDefault, stringOrDefault } from "helpers";
 
 initIcons();
 
-const config = {
+class ThemeSettings {
+  prettyEditor: boolean = true;
+  prettyPreview: boolean = true;
+  embeddedHeadings: boolean = false;
+  useSystemTheme: boolean = false;
+  fancyCursor: boolean = false;
+  accentHue: number = 211;
+  accentSat: number = 100;
+
+  lineWidth: number = 42;
+  textNormal: number = 18;
+
+  fontFeatures: string = '""';
+
+  textFont: string =
+    '-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,sans-serif';
+
+  editorFont: string =
+    '-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,sans-serif';
+  editorLineHeight: number = 1.88889;
+
+  monoFont: string = "Menlo,SFMono-Regular,Consolas,Roboto Mono,monospace";
+}
+
+const defaultSettings = new ThemeSettings();
+
+const observerConfig = {
   attributes: false,
   childList: true,
   subtree: false,
@@ -98,13 +125,11 @@ export default class CaliforniaCoastTheme extends Plugin {
 
   // refresh function for when we change settings
   refresh() {
-    // re-load the style
     this.updateStyle();
   }
 
   // add the styling elements we need
   addStyle() {
-    // add a css block for our settings-dependent styles
     const css = document.createElement("style");
     css.id = "california-coast-theme";
     document.getElementsByTagName("head")[0].appendChild(css);
@@ -117,12 +142,17 @@ export default class CaliforniaCoastTheme extends Plugin {
   }
 
   removeStyle() {
-    document.body.removeClass("cc-pretty-editor", "cc-pretty-preview", "fancy-cursor");
+    document.body.removeClass(
+      "cc-pretty-editor",
+      "cc-pretty-preview",
+      "fancy-cursor"
+    );
   }
 
   // update the styles (at the start, or as the result of a settings change)
   updateStyle() {
     this.removeStyle();
+
     document.body.classList.toggle(
       "cc-pretty-editor",
       this.settings.prettyEditor
@@ -135,21 +165,53 @@ export default class CaliforniaCoastTheme extends Plugin {
 
     // get the custom css element
     const el = document.getElementById("california-coast-theme");
-    if (!el) throw "california-coast-theme element not found!";
-    else {
+
+    if (!el) {
+      throw "california-coast-theme element not found!";
+    } else {
       // set the settings-dependent css
       el.innerText = `
         body.california-coast-theme {
-          --editor-font-size:${this.settings.textNormal}px;
-          --editor-font-features: ${this.settings.fontFeatures};
-          --editor-line-height: ${this.settings.editorLineHeight};
-          --editor-line-height-rem: ${this.settings.editorLineHeight}rem;
-          --line-width:${this.settings.lineWidth}rem;
-          --font-monospace:${this.settings.monoFont};
-          --text:${this.settings.textFont};
-          --text-editor:${this.settings.editorFont};
-          --accent-h:${this.settings.accentHue};
-          --accent-s:${this.settings.accentSat}%;
+          --editor-font-size: ${numberOrDefault(
+            this.settings.textNormal,
+            defaultSettings.textNormal
+          )}px;
+          --editor-font-features: ${stringOrDefault(
+            this.settings.fontFeatures,
+            defaultSettings.fontFeatures
+          )};
+          --editor-line-height: ${numberOrDefault(
+            this.settings.editorLineHeight,
+            defaultSettings.editorLineHeight
+          )};
+          --editor-line-height-rem: ${numberOrDefault(
+            this.settings.editorLineHeight,
+            defaultSettings.editorLineHeight
+          )}rem;
+          --line-width: ${numberOrDefault(
+            this.settings.lineWidth,
+            defaultSettings.lineWidth
+          )}rem;
+          --font-monospace: ${stringOrDefault(
+            this.settings.monoFont,
+            defaultSettings.monoFont
+          )};
+          --text: ${stringOrDefault(
+            this.settings.textFont,
+            defaultSettings.textFont
+          )};
+          --text-editor: ${stringOrDefault(
+            this.settings.editorFont,
+            defaultSettings.editorFont
+          )};
+          --accent-h: ${numberOrDefault(
+            this.settings.accentHue,
+            defaultSettings.accentHue
+          )};
+          --accent-s: ${numberOrDefault(
+            this.settings.accentSat,
+            defaultSettings.accentSat
+          )}%;
         }
       `
         .trim()
@@ -196,7 +258,7 @@ export default class CaliforniaCoastTheme extends Plugin {
         });
       });
 
-      this.observers[id].observe(previewSection[0], config);
+      this.observers[id].observe(previewSection[0], observerConfig);
 
       setTimeout(() => {
         previewSection[0].childNodes.forEach(tagNode);
@@ -238,7 +300,7 @@ export default class CaliforniaCoastTheme extends Plugin {
         if (this.settings.embeddedHeadings) {
           setTimeout(() => {
             this.embeddedHeadings.createHeadings(this.app);
-          }, 0)
+          }, 0);
         }
       })
     );
@@ -247,30 +309,6 @@ export default class CaliforniaCoastTheme extends Plugin {
   disableEmbeddedHeadings = () => {
     this.embeddedHeadings.onunload();
   };
-}
-
-class ThemeSettings {
-  prettyEditor: boolean = true;
-  prettyPreview: boolean = true;
-  embeddedHeadings: boolean = false;
-  useSystemTheme: boolean = false;
-  fancyCursor: boolean = false;
-  accentHue: number = 211;
-  accentSat: number = 100;
-
-  lineWidth: number = 42;
-  textNormal: number = 18;
-
-  fontFeatures: string = '""';
-
-  textFont: string =
-    '-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,sans-serif';
-
-  editorFont: string =
-    '-apple-system,BlinkMacSystemFont,"Segoe UI Emoji","Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,sans-serif';
-  editorLineHeight: number = 1.88889;
-
-  monoFont: string = "Menlo,SFMono-Regular,Consolas,Roboto Mono,monospace";
 }
 
 class ThemeSettingTab extends PluginSettingTab {
@@ -286,7 +324,7 @@ class ThemeSettingTab extends PluginSettingTab {
 
     containerEl.empty();
     containerEl.createEl("h3", { text: "California Coast Theme" });
-    containerEl.createEl("a", { text: "⬤ Accent color" });
+    containerEl.createEl("a", { text: "⬤ Accent Color" });
     containerEl.createEl("h3");
 
     new Setting(containerEl)
@@ -295,7 +333,11 @@ class ThemeSettingTab extends PluginSettingTab {
       .addSlider((slider) =>
         slider
           .setLimits(0, 360, 1)
-          .setValue(this.plugin.settings.accentHue)
+          .setValue(
+            typeof this.plugin.settings.accentHue === "number"
+              ? this.plugin.settings.accentHue
+              : defaultSettings.accentHue
+          )
           .onChange((value) => {
             this.plugin.settings.accentHue = value;
             this.plugin.saveData(this.plugin.settings);
@@ -309,7 +351,11 @@ class ThemeSettingTab extends PluginSettingTab {
       .addSlider((slider) =>
         slider
           .setLimits(0, 100, 1)
-          .setValue(this.plugin.settings.accentSat)
+          .setValue(
+            typeof this.plugin.settings.accentSat === "number"
+              ? this.plugin.settings.accentSat
+              : defaultSettings.accentSat
+          )
           .onChange((value) => {
             this.plugin.settings.accentSat = value;
             this.plugin.saveData(this.plugin.settings);
@@ -326,6 +372,24 @@ class ThemeSettingTab extends PluginSettingTab {
           this.plugin.saveData(this.plugin.settings);
           this.plugin.refresh();
         })
+      );
+
+    new Setting(containerEl)
+      .setName("Use system-level setting for light or dark mode")
+      .setDesc("Automatically switch based on your operating system settings")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.useSystemTheme)
+          .onChange((value) => {
+            this.plugin.settings.useSystemTheme = value;
+            this.plugin.saveData(this.plugin.settings);
+
+            if (value) {
+              this.plugin.listenForSystemTheme();
+            } else {
+              this.plugin.stopListeningForSystemTheme();
+            }
+          })
       );
 
     new Setting(containerEl)
@@ -378,30 +442,14 @@ class ThemeSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Use system-level setting for light or dark mode")
-      .setDesc("Automatically switch based on your operating system settings")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.useSystemTheme)
-          .onChange((value) => {
-            this.plugin.settings.useSystemTheme = value;
-            this.plugin.saveData(this.plugin.settings);
-
-            if (value) {
-              this.plugin.listenForSystemTheme();
-            } else {
-              this.plugin.stopListeningForSystemTheme();
-            }
-          })
-      );
-
-    new Setting(containerEl)
       .setName("Line width")
       .setDesc("The maximum number of characters per line (default 40)")
       .addText((text) =>
         text
           .setPlaceholder("42")
-          .setValue((this.plugin.settings.lineWidth || "") + "")
+          .setValue(
+            (this.plugin.settings.lineWidth || defaultSettings.lineWidth) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.lineWidth = parseInt(value.trim());
             this.plugin.saveData(this.plugin.settings);
@@ -415,7 +463,9 @@ class ThemeSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder("18")
-          .setValue((this.plugin.settings.textNormal || "") + "")
+          .setValue(
+            (this.plugin.settings.textNormal || defaultSettings.textNormal) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.textNormal = parseInt(value.trim());
             this.plugin.saveData(this.plugin.settings);
@@ -429,7 +479,10 @@ class ThemeSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder("1.88889")
-          .setValue((this.plugin.settings.editorLineHeight || "") + "")
+          .setValue(
+            (this.plugin.settings.editorLineHeight ||
+              defaultSettings.editorLineHeight) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.editorLineHeight = parseFloat(value.trim());
             this.plugin.saveData(this.plugin.settings);
@@ -446,7 +499,9 @@ class ThemeSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder("")
-          .setValue((this.plugin.settings.textFont || "") + "")
+          .setValue(
+            (this.plugin.settings.textFont || defaultSettings.textFont) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.textFont = value;
             this.plugin.saveData(this.plugin.settings);
@@ -455,12 +510,14 @@ class ThemeSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Editor font")
+      .setName("Body font")
       .setDesc("Used for the editor and preview")
       .addText((text) =>
         text
           .setPlaceholder("")
-          .setValue((this.plugin.settings.editorFont || "") + "")
+          .setValue(
+            (this.plugin.settings.editorFont || defaultSettings.editorFont) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.editorFont = value;
             this.plugin.saveData(this.plugin.settings);
@@ -469,12 +526,15 @@ class ThemeSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Editor font features")
+      .setName("Body font features")
       .setDesc('eg. "ss01", "cv05", "cv07", "case"')
       .addText((text) =>
         text
           .setPlaceholder('""')
-          .setValue((this.plugin.settings.fontFeatures || "") + "")
+          .setValue(
+            (this.plugin.settings.fontFeatures ||
+              defaultSettings.fontFeatures) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.fontFeatures = value.trim();
             this.plugin.saveData(this.plugin.settings);
@@ -488,7 +548,9 @@ class ThemeSettingTab extends PluginSettingTab {
       .addText((text) =>
         text
           .setPlaceholder("")
-          .setValue((this.plugin.settings.monoFont || "") + "")
+          .setValue(
+            (this.plugin.settings.monoFont || defaultSettings.monoFont) + ""
+          )
           .onChange((value) => {
             this.plugin.settings.monoFont = value;
             this.plugin.saveData(this.plugin.settings);
