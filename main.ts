@@ -8,9 +8,22 @@ import {
 
 import EmbeddedHeadingsExtension from "./extensions/embeddedHeadings";
 import { initIcons } from "./extensions/boxicons";
-import { numberOrDefault, stringOrDefault } from "helpers";
+import {
+  numberOrDefault,
+  populatedArrayOrDefault,
+  stringOrDefault,
+} from "helpers";
 
 initIcons();
+
+interface HeadingConfig {
+  size: string;
+  lineHeight: number;
+  marginTop: number;
+  marginBottom: number;
+  weight: number;
+  style: string;
+}
 
 class ThemeSettings {
   prettyEditor: boolean = true;
@@ -34,6 +47,57 @@ class ThemeSettings {
   editorLineHeight: number = 1.88889;
 
   monoFont: string = "Menlo,SFMono-Regular,Consolas,Roboto Mono,monospace";
+
+  headingConfig: HeadingConfig[] = [
+    {
+      size: "1.602rem",
+      lineHeight: 1.4,
+      marginTop: 4,
+      marginBottom: 1,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      size: "1.424rem",
+      lineHeight: 1.4,
+      marginTop: 2.5,
+      marginBottom: 0.5,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      size: "1.266rem",
+      lineHeight: 1.4,
+      marginTop: 2,
+      marginBottom: 0.5,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      size: "1.125rem",
+      lineHeight: 1.5,
+      marginTop: 1.5,
+      marginBottom: 0.5,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      size: "1rem",
+      lineHeight: 1.5,
+      marginTop: 1.5,
+      marginBottom: 0.5,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      size: "1rem",
+      lineHeight: 1.5,
+      marginTop: 1.5,
+      marginBottom: 0.5,
+      weight: 500,
+      style: "italic",
+    },
+  ];
 }
 
 const defaultSettings = new ThemeSettings();
@@ -169,6 +233,11 @@ export default class CaliforniaCoastTheme extends Plugin {
     if (!el) {
       throw "california-coast-theme element not found!";
     } else {
+      const headingConfig = populatedArrayOrDefault<HeadingConfig>(
+        this.settings.headingConfig,
+        defaultSettings.headingConfig
+      );
+
       // set the settings-dependent css
       el.innerText = `
         body.california-coast-theme {
@@ -212,6 +281,19 @@ export default class CaliforniaCoastTheme extends Plugin {
             this.settings.accentSat,
             defaultSettings.accentSat
           )}%;
+
+          ${headingConfig
+            .map(
+              (c, i) => `
+              --h${i + 1}-size: ${c.size};
+              --h${i + 1}-line-height: ${c.lineHeight};
+              --h${i + 1}-margin-top: ${c.marginTop};
+              --h${i + 1}-margin-bottom: ${c.marginBottom}; 
+              --h${i + 1}-weight: ${c.weight}; 
+              --h${i + 1}-style: ${c.style}; 
+            `
+            )
+            .join(" ")}
         }
       `
         .trim()
@@ -406,107 +488,6 @@ class ThemeSettingTab extends PluginSettingTab {
       );
 
     containerEl.createEl("br");
-    containerEl.createEl("h3", { text: "Typography" });
-
-    new Setting(containerEl)
-      .setName("Enhanced Editor Typography")
-      .setDesc("Enhances the typography styles in editor mode")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.prettyEditor).onChange((value) => {
-          this.plugin.settings.prettyEditor = value;
-          this.plugin.saveData(this.plugin.settings);
-          this.plugin.refresh();
-        })
-      );
-
-    new Setting(containerEl)
-      .setName("Enhanced Preview Typography")
-      .setDesc("Enhances the typography styles in preview mode")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.prettyPreview)
-          .onChange((value) => {
-            this.plugin.settings.prettyPreview = value;
-            this.plugin.saveData(this.plugin.settings);
-            this.plugin.refresh();
-
-            if (value) {
-              this.plugin.enableContextualTypography();
-            } else {
-              this.plugin.disableContextualTypography();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Display note file names as headings")
-      .setDesc("Embeds note titles as top level H1 tags")
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.embeddedHeadings)
-          .onChange((value) => {
-            this.plugin.settings.embeddedHeadings = value;
-            this.plugin.saveData(this.plugin.settings);
-            this.plugin.refresh();
-
-            if (value) {
-              this.plugin.enableEmbeddedHeadings();
-            } else {
-              this.plugin.disableEmbeddedHeadings();
-            }
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Line width")
-      .setDesc("The maximum number of characters per line (default 40)")
-      .addText((text) =>
-        text
-          .setPlaceholder("42")
-          .setValue(
-            (this.plugin.settings.lineWidth || defaultSettings.lineWidth) + ""
-          )
-          .onChange((value) => {
-            this.plugin.settings.lineWidth = parseInt(value.trim());
-            this.plugin.saveData(this.plugin.settings);
-            this.plugin.refresh();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Body font size")
-      .setDesc("Used for the main text (default 18)")
-      .addText((text) =>
-        text
-          .setPlaceholder("18")
-          .setValue(
-            (this.plugin.settings.textNormal || defaultSettings.textNormal) + ""
-          )
-          .onChange((value) => {
-            this.plugin.settings.textNormal = parseInt(value.trim());
-            this.plugin.saveData(this.plugin.settings);
-            this.plugin.refresh();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName("Body line height")
-      .setDesc("Used for the main text (default 1.88889)")
-      .addText((text) =>
-        text
-          .setPlaceholder("1.88889")
-          .setValue(
-            (this.plugin.settings.editorLineHeight ||
-              defaultSettings.editorLineHeight) + ""
-          )
-          .onChange((value) => {
-            this.plugin.settings.editorLineHeight = parseFloat(value.trim());
-            this.plugin.saveData(this.plugin.settings);
-            this.plugin.refresh();
-          })
-      );
-
-    containerEl.createEl("br");
     containerEl.createEl("h3", { text: "Custom fonts" });
 
     new Setting(containerEl)
@@ -573,5 +554,233 @@ class ThemeSettingTab extends PluginSettingTab {
             this.plugin.refresh();
           })
       );
+
+    containerEl.createEl("br");
+    containerEl.createEl("h3", { text: "Typography" });
+
+    new Setting(containerEl)
+      .setName("Display note file names as headings")
+      .setDesc("Embeds note titles as top level H1 tags")
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.embeddedHeadings)
+          .onChange((value) => {
+            this.plugin.settings.embeddedHeadings = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+
+            if (value) {
+              this.plugin.enableEmbeddedHeadings();
+            } else {
+              this.plugin.disableEmbeddedHeadings();
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Enhanced Editor Typography")
+      .setDesc("Adds WYSIWYG-like functionality to editor mode")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.prettyEditor).onChange((value) => {
+          this.plugin.settings.prettyEditor = value;
+          this.plugin.saveData(this.plugin.settings);
+          this.plugin.refresh();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Enhanced Preview Typography")
+      .setDesc(
+        "Adds context aware padding between text elements in preview mode"
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.prettyPreview)
+          .onChange((value) => {
+            this.plugin.settings.prettyPreview = value;
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+
+            if (value) {
+              this.plugin.enableContextualTypography();
+            } else {
+              this.plugin.disableContextualTypography();
+            }
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Line width")
+      .setDesc("The maximum number of characters per line (default 42)")
+      .addText((text) =>
+        text
+          .setPlaceholder("42")
+          .setValue(
+            (this.plugin.settings.lineWidth || defaultSettings.lineWidth) + ""
+          )
+          .onChange((value) => {
+            this.plugin.settings.lineWidth = parseInt(value.trim());
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Body font size")
+      .setDesc("Used for the main text (default 18)")
+      .addText((text) =>
+        text
+          .setPlaceholder("18")
+          .setValue(
+            (this.plugin.settings.textNormal || defaultSettings.textNormal) + ""
+          )
+          .onChange((value) => {
+            this.plugin.settings.textNormal = parseInt(value.trim());
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Body line height")
+      .setDesc("Used for the main text (default 1.88889)")
+      .addText((text) =>
+        text
+          .setPlaceholder("1.88889")
+          .setValue(
+            (this.plugin.settings.editorLineHeight ||
+              defaultSettings.editorLineHeight) + ""
+          )
+          .onChange((value) => {
+            this.plugin.settings.editorLineHeight = parseFloat(value.trim());
+            this.plugin.saveData(this.plugin.settings);
+            this.plugin.refresh();
+          })
+      );
+
+    if (
+      !this.plugin.settings.headingConfig ||
+      this.plugin.settings.headingConfig.length === 0
+    ) {
+      this.plugin.settings.headingConfig = defaultSettings.headingConfig.map(
+        (c) => ({
+          ...c,
+        })
+      );
+    }
+
+    this.plugin.settings.headingConfig.forEach((c, i) => {
+      const index = i;
+
+      containerEl.createEl("h4", { text: `Level ${i + 1} Headings` });
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} font size`)
+        .setDesc(
+          `Accepts any CSS font-size value (default ${defaultSettings.headingConfig[index].size})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(defaultSettings.headingConfig[index].size)
+            .setValue(c.size)
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[index].size = value;
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} line height`)
+        .setDesc(
+          `Accepts decimal values (default ${defaultSettings.headingConfig[index].lineHeight})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(
+              defaultSettings.headingConfig[index].lineHeight + ""
+            )
+            .setValue(c.lineHeight + "")
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[index].lineHeight = parseFloat(
+                value
+              );
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} top margin`)
+        .setDesc(
+          `Accepts decimal values representing the number of lines to add before the heading (default ${defaultSettings.headingConfig[index].marginTop})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(defaultSettings.headingConfig[index].marginTop + "")
+            .setValue(c.marginTop + "")
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[index].marginTop = parseFloat(
+                value
+              );
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} bottom margin`)
+        .setDesc(
+          `Accepts decimal values representing the number of lines to add below the heading (default ${defaultSettings.headingConfig[index].marginBottom})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(
+              defaultSettings.headingConfig[index].marginBottom + ""
+            )
+            .setValue(c.marginBottom + "")
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[
+                index
+              ].marginBottom = parseFloat(value);
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} font weight`)
+        .setDesc(
+          `Accepts numbers represeting the CSS font-weight (default ${defaultSettings.headingConfig[index].weight})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(defaultSettings.headingConfig[index].weight + "")
+            .setValue(c.weight + "")
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[index].weight = parseFloat(
+                value
+              );
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName(`H${index + 1} font style`)
+        .setDesc(
+          `Accepts any CSS font-style value (default ${defaultSettings.headingConfig[index].style})`
+        )
+        .addText((text) =>
+          text
+            .setPlaceholder(defaultSettings.headingConfig[index].style)
+            .setValue(c.style)
+            .onChange((value) => {
+              this.plugin.settings.headingConfig[index].style = value;
+              this.plugin.saveData(this.plugin.settings);
+              this.plugin.refresh();
+            })
+        );
+    });
   }
 }
