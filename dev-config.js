@@ -1,3 +1,1 @@
-module.exports = {
-    pluginDestination: '',
-}
+export const pluginDestination = "";
